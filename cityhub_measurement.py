@@ -12,19 +12,28 @@ sensor_hsv = ColorDistanceSensor(Port.B)
 motor = Motor(Port.A)
 hub = CityHub()
 
-data_size = 1500
+data_size = 1000
 data_rgb = (bytearray(data_size), bytearray(data_size), bytearray(data_size))
+data_hsv = (bytearray(data_size), bytearray(data_size), bytearray(data_size))
 
 data_index = 0
+hsv_names = ("h", "s", "v")
 
 def store_color():
-    global data_index, data_rgb
+    global data_index, data_rgb, data_hsv
     rgb_raw = sensor_raw.read(6)
+    hsv = sensor_hsv.hsv()
 
     for rgb_index in range(3):
         entry = (rgb_raw[rgb_index]).to_bytes(2, "big")
         data_rgb[rgb_index][data_index] = entry[0]
         data_rgb[rgb_index][data_index+1] = entry[1]
+    
+    for hsv_index in range(3):
+        entry = getattr(hsv, hsv_names[hsv_index]).to_bytes(2, "big")
+        data_hsv[hsv_index][data_index] = entry[0]
+        data_hsv[hsv_index][data_index+1] = entry[1]
+
     data_index += 2
 
 hub.system.set_stop_button(None)
@@ -60,10 +69,13 @@ def finish_measuring():
     usys.stdout.buffer.write(data_rgb[0])
     usys.stdout.buffer.write(data_rgb[1])
     usys.stdout.buffer.write(data_rgb[2])
+    usys.stdout.buffer.write(data_hsv[0])
+    usys.stdout.buffer.write(data_hsv[1])
+    usys.stdout.buffer.write(data_hsv[2])
     print()
     set_state("waiting")
     motor.run(-900)
-    wait(5400)
+    wait(4000)
     motor.stop()
 
 set_state("waiting")
